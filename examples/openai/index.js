@@ -4,14 +4,14 @@ import { match, P } from 'ts-pattern';
 import { Sentinel, StreamingParser, adapters } from 'fn-stream';
 const { createChatCompletionTool } = adapters.openai;
 
-const SUPPORTED_LANGUAGES = ['python', 'javascript', 'haskell'];
+const userPrompt = process.argv[2] ?? `In each of your supported languages, write a program that prints "Hello, World"`;
+const languages = process.argv.length >= 3 ? process.argv.slice(3) : ['python', 'javascript', 'rust'];
 
 const Tool = createChatCompletionTool(
   'write-code',
-  'Use this tool instead of writing code in a message.',
+  'Use this tool to respond to requests to write code or programs instead of writing a message',
   {
     type: 'object',
-    description: 'A tool to write code in a supported language. Send properties in objects in the order defined.',
     properties: {
       responses: {
         description: 'An array of responses to send to the user.',
@@ -21,12 +21,12 @@ const Tool = createChatCompletionTool(
           properties: {
             preamble: {
               type: 'string',
-              description: 'Optional message to send to the user before code code, typically describing the program you are about to write or replying to the user.',
+              description: 'Optional message to send to the user before code code, typically describing the program you are about to write or a first message replying to the user.',
             },
             language: {
               type: 'string',
-              enum: SUPPORTED_LANGUAGES,
-              description: 'The language to use for the code, as a lowercase string',
+              enum: languages,
+              description: 'The language to use for the code, as a lowercase string. These are the supported languages.',
             },
             code: {
               type: 'string',
@@ -49,7 +49,7 @@ const Tool = createChatCompletionTool(
   },
 );
 
-console.log('✨ Calling OpenAI');
+console.log('✨  Calling OpenAI');
 
 const client = new OpenAI();
 
@@ -63,9 +63,6 @@ const { data, response } = await client.chat.completions
     max_tokens: 4_000,
     tool_choice: 'auto',
     tools,
-    response_format: {
-      type: 'json_object',
-    },
     messages: [
       {
         role: 'system',
@@ -74,7 +71,9 @@ You are a helpful assistant.
 
 # Using Tools
 
-Call only one tool at a time, either ${toolNames} or respond to the user in a message, but do not do both or more than one. When using a tool, respond in JSON format.
+Call only one tool at a time, either ${toolNames} or respond to the user in a message, but do not do both or more than one.
+When using a tool, order properties in the same order as the schema.
+Prefer using tools which provide structured responses over unstructured text replies (even, e.g.: markdown).
 
 You MUST NOT use the "parallel" or "multi_tool_use.parallel" tools. Those are not supported.
 You must never make more than 1 Tool Call.
@@ -83,39 +82,11 @@ Tools that permit you to make more than one tool call - like ${Tool.function.nam
       },
       {
         role: 'user',
-        content: `\
-In each of your supported languages, write a program that:
-1. Prints "Hello, world!".
-2. Prints the 100th Fibonacci number.
-`,
+        content: userPrompt,
       },
     ],
   })
   .withResponse();
-
-function unbufferedWrite(text, part) {
-  if (process.env.FILTER_PART && process.env.FILTER_PART !== part) {
-    return;
-  }
-  switch (part) {
-    case 'preamble':
-      process.stderr.write(xtermSlateBlue)
-      break;
-    case 'language':
-      process.stderr.write(xtermDeepPink3);
-      break;
-    case 'code':
-      process.stderr.write(xtermPurple);
-      break;
-    case 'postscript':
-      process.stderr.write(xtermSteelBlue);
-      break;
-    default:
-      process.stderr.write(colorReset);
-      break;
-  }
-  process.stderr.write(text);
-}
 
 const xtermPurple = '\x1b[38;5;93m';
 const xtermSlateBlue = '\x1b[38;5;99m';
@@ -123,11 +94,35 @@ const xtermSteelBlue = '\x1b[38;5;81m';
 const xtermDeepPink3 = '\x1b[38;5;162m';
 const colorReset = '\x1b[0m';
 
+function unbufferedWrite(text, part) {
+  if (part && process.env.FILTER_PART && process.env.FILTER_PART !== part) {
+    return;
+  }
+  switch (part) {
+    case 'preamble':
+      process.stdout.write(xtermSlateBlue)
+      break;
+    case 'language':
+      process.stdout.write(xtermDeepPink3);
+      break;
+    case 'code':
+      process.stdout.write(xtermPurple);
+      break;
+    case 'postscript':
+      process.stdout.write(xtermSteelBlue);
+      break;
+    default:
+      process.stdout.write(colorReset);
+      break;
+  }
+  process.stdout.write(text);
+}
+
 if (response.status !== 200) {
   throw new Error(`OpenAI returned a ${response.status} status code`);
 }
 
-console.log(`✨ OpenAI stream beginning`);
+console.log(`✨  OpenAI stream beginning`);
 
 /**
  * @type {StreamingParser<(typeof Tool)["$inferParameters"]>}
@@ -142,7 +137,7 @@ let currentLanguage = null;
 for await (const chunk of data) {
   for (const choice of chunk.choices) {
     if (choice.delta.content) {
-      unbufferedWrite(choice.delta.content, colorReset);
+      unbufferedWrite(choice.delta.content);
     }
     for (const toolCall of choice.delta?.tool_calls ?? []) {
       if (toolCall.function?.arguments) {
@@ -171,7 +166,7 @@ for await (const chunk of data) {
                 language: currentLanguage,
                 code: event.value,
               });
-              unbufferedWrite('\n');
+              unbufferedWrite('\n', 'code');
               unbufferedWrite('```\n', 'postscript');
             })
             .with({ kind: 'partial', path: [P._, P._, 'postscript', Sentinel] }, (event) => {
@@ -189,10 +184,10 @@ for await (const chunk of data) {
   }
 }
 
-unbufferedWrite('\n', colorReset);
-console.log(`✨ The OpenAI call completed.`);
+unbufferedWrite('\n');
+console.log(`✨  The OpenAI call completed.`);
 
-console.log('✨ Summary:')
+console.log('✨  Summary:')
 for (const program of programs) {
   console.log(
     `Received a ${program.language} program that was ${program.code.length} characters long.\n`,

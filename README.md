@@ -22,7 +22,20 @@ This library is written in TypeScript but does not require it!
 
 ### CLI Example with OpenAI
 
-This example, from [examples/openai/index.js](./examples/openai/index.js), shows how the fn-stream tool can be used to incrementally stream parts of a response to the user in a CLI program. In this example we ask the model to generate structured responses with four fields, which we color differently in the output below.
+This example, from [examples/openai/index.js](./examples/openai/index.js), shows how the fn-stream tool can be used to incrementally stream parts of a response to the user in a CLI program.
+
+In this example we prompt the model to generate code in a number of languages, using a tool definition to separate the code from the conversation. The tool's schema matches this TypeScript type:
+
+```typescript
+type ToolArguments {
+  responses: {
+    preamble?: string;
+    language: string;
+    code: string;
+    postscript?: string;
+  }[]
+}
+```
 
 The `fn-stream` library allows us to extract and summarize the code, here just the length, without requiring additional LLM API calls, finnicky parsing logic, or long delays.
 
@@ -32,24 +45,38 @@ The `fn-stream` library allows us to extract and summarize the code, here just t
 
 1. Run `pnpm install` (see: [`pnpm`` installation](https://pnpm.io/installation)) in the root directory to install `fn-stream` in the workspace.
 
-1. Set the OPENAI_API_KEY environment variable, you may need to [sign up for an OpenAI API account](https://platform.openai.com/signup):
+2. Set the OPENAI_API_KEY environment variable, you may need to [sign up for an OpenAI API account](https://platform.openai.com/signup):
 
-1. In the `examples/openai` directory, run the example:
+3. In the `examples/openai` directory, run the example:
 
    ```bash
    node ./index.js
    ```
 
-1. You should see output streaming after the call.
+4. You should see output streaming after the call.
 
-1. Try running with the `FILTER_PART` environment variable to filter the output to just one of the **preamble** (message before code), **language**, **code**, or **postscript** (message after code).
+5. Try running with the `FILTER_PART` environment variable to filter the output to just one of the **preamble** (message before code), **language**, **code**, or **postscript** (message after code).
 
    ```bash
    FILTER_PART=code node ./index.js
    ```
 </details>
 
-![A screen recording of the CLI example. The program emits programs in Python, JavaScript, and Haskell, and the text and code are rendered using different colors in the terminal.](examples/openai/demo.svg)
+#### Full output
+
+In this example, we prompt the model for code and the tool's schema limits the languages to the arguments after the prompt: JavaScript, Python, and Rust. We print the conversation, colorized by which field is rendered.
+
+There is no Markdown parsing behind this, just streaming, structured output! The code fence backticks are inserted by the program when receiving a "language" field, and the closing backticks are inserted when the "code" field is complete.
+
+![A screen recording of the example. The program emits programs in Python, JavaScript, and Rust, and the text and code are rendered using different colors in the terminal.](examples/openai/demo.svg)
+
+#### Field extraction
+
+In this example, we run the program with the default prompt and languages. This prompts the model to write "Hello World" in three languages. The `FILTER_PART` environment variable is used to filter the result to just the code. Again, the language model is not emitting unstructured text. The model is still producing the preamble, language, and postscript fields, they are filtered out of the text response.
+
+By using `fn-stream`, we can prompt a model to generate multimodal output, text, code, structured data, and operate on or stream only what the application needs.
+
+![A screen recording of the example. The program emits *just* code, with no other content.](examples/openai/helloworld.svg)
 
 ### More examples
 
