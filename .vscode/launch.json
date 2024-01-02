@@ -1,0 +1,30 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug fn-stream",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/packages/fn-stream",
+      "outputCapture": "std",
+      "console": "integratedTerminal",
+      "program": "${workspaceFolder}/packages/fn-stream/node_modules/ava/entrypoints/cli.mjs",
+      "args": [
+        "--no-worker-threads",
+        "--serial",
+        "--concurrency=1",
+      ],
+      "env": {
+        "NODE_PROFILE": "1",
+      },
+      "stopOnEntry": true
+    }
+  ]
+}

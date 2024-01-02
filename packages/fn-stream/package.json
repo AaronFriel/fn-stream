@@ -1,0 +1,72 @@
+{
+  "name": "fn-stream",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    "default": "./dist/index.js",
+    "import": "./dist/index.js",
+    "require": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "sideEffects": false,
+  "license": "MIT",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --external react",
+    "dev": "tsup src/index.ts --format esm,cjs --watch --dts --external react",
+    "lint": "xo",
+    "test": "cross-env NODE_OPTIONS='--loader=tsx --no-warnings' ava",
+    "test-coverage": "NODE_OPTIONS='--loader=tsx --no-warnings' c8 ava",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "devDependencies": {
+    "@fast-check/ava": "^1.2.1",
+    "@swc-node/register": "^1.6.6",
+    "@types/node": "^20.10.5",
+    "ava": "^5.3.1",
+    "c8": "^8.0.1",
+    "cross-env": "^7.0.3",
+    "immer": "^10.0.3",
+    "json-schema-to-ts": "^3.0.0",
+    "openai": "^4",
+    "p-queue": "^8.0.1",
+    "ts-pattern": "^5.0.6",
+    "tsup": "^7.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "5.4.0-dev.20240101",
+    "xo": "^0.55.0"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader=tsx",
+      "--no-warnings"
+    ],
+    "files": [
+      "src/**/*.spec.{ts,tsx}",
+      "examples/**/*.spec.{ts,tsx}"
+    ]
+  },
+  "c8": {
+    "exclude": [
+      "**/*.spec.{ts,tsx}"
+    ]
+  },
+  "xo": {
+    "prettier": "true",
+    "space": 2
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "openai": "^4.24.1"
+  }
+}
