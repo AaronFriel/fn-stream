@@ -37,7 +37,7 @@ The `fn-stream` library allows us to extract and summarize the code, here just t
 1. In the `examples/openai` directory, run the example:
 
    ```bash
-   node ./index.js > log.txt
+   node ./index.js
    ```
 
 1. You should see output streaming after the call.
@@ -45,7 +45,7 @@ The `fn-stream` library allows us to extract and summarize the code, here just t
 1. Try running with the `FILTER_PART` environment variable to filter the output to just one of the **preamble** (message before code), **language**, **code**, or **postscript** (message after code).
 
    ```bash
-   FILTER_PART=code node ./index.js > log.txt
+   FILTER_PART=code node ./index.js
    ```
 </details>
 
