@@ -1,0 +1,74 @@
+import { StreamingParser } from "../partial-json/parser";
+
+// import { match, P, Pattern } from 'ts-pattern'
+import { ParseEvent } from "../types";
+// import { symbol } from "ts-pattern/dist/patterns";
+
+type Reader = (type: string) => void;
+type Proxy = {};
+
+function createEventProxy(): {
+  parse: Reader,
+  proxy: Proxy,
+} {
+  const streamingParser: StreamingParser = new StreamingParser({
+    stream: true,
+  });
+
+  type Handler = (parseEvent: ParseEvent<never>) => void;
+
+  type HandlerValue =
+    | Handler
+    | { }
+
+  // const handlers: Map<string, Handler> = [];
+
+  const feed = (chunk: string) => {
+    const { events } = streamingParser.parseIncremental(chunk);
+  }
+
+  const proxy = new Proxy({}, {
+    get(target, prop, receiver) {
+
+    }
+  })
+
+  return {
+
+  };
+
+}
+
+const AnyKey: unique symbol = Symbol('Any Key');
+type Key = typeof AnyKey;
+
+const AnyIndex: unique symbol = Symbol('Array Index');
+type Index = typeof AnyIndex;
+
+const { proxy, parse } = createEventProxy();
+
+// // expected API:
+// proxy.foo.bar.onStart(() => {
+
+// });
+
+// proxy.foo.[Index].onStart(() => {
+
+// });
+
+// parse('');
+
+const foo = new Proxy({
+  foo: 'bar',
+}, {
+  get(target, prop, receiver) {
+    console.log('get', { target, prop, receiver });
+    console.log(typeof prop);
+    console.log('is any key?', prop === AnyKey);
+    console.log('is any index?', prop === AnyIndex);
+
+    return target[prop];
+  }
+});
+
+foo[AnyKey];

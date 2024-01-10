@@ -1,7 +1,9 @@
-import { JSONSchema, FromSchema } from 'json-schema-to-ts';
-import { ChatCompletionTool } from 'openai/resources';
+import type { JSONSchema, FromSchema } from 'json-schema-to-ts';
+import type { ChatCompletionTool } from 'openai/resources';
 
-type TypedChatCompletionTool<Name extends string, Spec extends JSONSchema> = ChatCompletionTool & {
+export { type JSONSchema, FromSchema, ChatCompletionTool };
+
+export type TypedChatCompletionTool<Name extends string, Spec extends JSONSchema> = ChatCompletionTool & {
   function: {
     name: Name;
     parameters: Spec;

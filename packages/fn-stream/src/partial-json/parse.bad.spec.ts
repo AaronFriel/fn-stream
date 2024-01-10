@@ -1,5 +1,6 @@
 import test from 'ava';
 import * as JSON5 from './parser';
+import { internalGetStateRoot, internalGetRoot } from './helpers/util';
 
 test('parse() - errors - empty documents', (t) => {
   const parser = new JSON5.StreamingParser();
@@ -454,8 +455,8 @@ test('parse() - leading + in a number', (t) => {
 test('parse() - error - incorrectly completed partial string', (t) => {
   const parser = new JSON5.StreamingParser();
   t.deepEqual(parser.parse('"abc'), 'abc');
-  t.deepEqual(parser.stateRoot, 'partial');
-  t.deepEqual(parser.root, 'abc');
+  t.deepEqual(internalGetStateRoot(parser), 'partial');
+  t.deepEqual(internalGetRoot(parser), 'abc');
 
   const err = t.throws(
     () => {
@@ -476,8 +477,8 @@ for (const suffix of ['null', '"', '1', 'true', '{}', '[]']) {
   )}`, (t) => {
     const parser = new JSON5.StreamingParser();
     t.deepEqual(parser.parse('"abc'), 'abc');
-    t.deepEqual(parser.stateRoot, 'partial');
-    t.deepEqual(parser.root, 'abc');
+    t.deepEqual(internalGetStateRoot(parser), 'partial');
+    t.deepEqual(internalGetRoot(parser), 'abc');
 
     let errorChar = suffix[0];
     if (errorChar === '"') {

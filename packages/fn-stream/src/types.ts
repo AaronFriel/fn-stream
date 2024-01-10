@@ -17,7 +17,7 @@ export type Sentinel = typeof Sentinel;
 
 export type PathPart = string | number | Sentinel | Symbol; // Symbol is not actually used.
 
-type MapPartialParseEvent<T, PathPrefix extends Array<PathPart>> = {
+export type MapPartialParseEvent<T, PathPrefix extends Array<PathPart>> = {
   [K in keyof T]: InferParseEvent<T[K], [...PathPrefix, K], 'complete'>;
 };
 
@@ -59,4 +59,7 @@ export type InferParseEvent<
         MapPartialParseEvent<T, PathPrefix> extends Record<any, infer U> ? U : never
       : never);
 
-export type ParseEvent<T> = Readonly<InferParseEvent<T>>;
+export type IsStrictlyAny<T> = (T extends never ? true : false) extends false ? false : true;
+
+
+export type ParseEvent<T> = IsStrictlyAny<T> extends true ? any : Readonly<InferParseEvent<T>>;

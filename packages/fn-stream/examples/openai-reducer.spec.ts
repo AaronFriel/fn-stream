@@ -205,9 +205,6 @@ test('OpenAI Function Example', async (t) => {
       .with({ kind: 'complete' }, () => {
         // console.log(`Completed a part of a tool call: ${event.path.map((x) => x.toString())}`);
       })
-      .with({ kind: 'partial' }, () => {
-        // console.log(`Partially updated a property of a tool call: ${event.path.map((x) => x.toString())}`);
-      })
       .exhaustive();
   };
 

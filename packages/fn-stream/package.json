@@ -1,15 +1,24 @@
 {
   "name": "fn-stream",
   "version": "0.0.0",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
-    "default": "./dist/index.js",
-    "import": "./dist/index.js",
-    "require": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "module": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./adapters/openai": {
+      "types": "./dist/adapters/openai/index.d.ts",
+      "import": "./dist/adapters/openai/index.js",
+      "module": "./dist/adapters/openai/index.js",
+      "require": "./dist/adapters/openai/index.cjs"
+    }
   },
   "sideEffects": false,
   "license": "MIT",
@@ -17,9 +26,10 @@
     "dist/**"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --external react",
-    "dev": "tsup src/index.ts --format esm,cjs --watch --dts --external react",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "lint": "xo",
+    "check": "tsc --noEmit",
     "test": "cross-env NODE_OPTIONS='--loader=tsx --no-warnings' ava",
     "test-coverage": "NODE_OPTIONS='--loader=tsx --no-warnings' c8 ava",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
@@ -38,7 +48,7 @@
     "ts-pattern": "^5.0.6",
     "tsup": "^7.1.0",
     "tsx": "^4.7.0",
-    "typescript": "5.4.0-dev.20240101",
+    "typescript": "5.3.3",
     "xo": "^0.55.0"
   },
   "ava": {
