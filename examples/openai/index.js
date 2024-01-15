@@ -1,60 +1,67 @@
 import { OpenAI } from 'openai';
 import { match, P } from 'ts-pattern';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { Sentinel, StreamingParser, adapters } from 'fn-stream';
-const { createChatCompletionTool } = adapters.openai;
+import { StreamingParser, Sentinel } from 'fn-stream';
 
-const userPrompt = process.argv[2] ?? `In each of your supported languages, write a program that prints "Hello, World"`;
-const languages = process.argv.length >= 3 ? process.argv.slice(3) : ['python', 'javascript', 'rust'];
+const userPrompt =
+  process.argv[2] ??
+  `In each of your supported languages, write a program that prints "Hello, World"`;
 
-const Tool = createChatCompletionTool(
-  'write-code',
-  'Use this tool to respond to requests to write code or programs instead of writing a message',
-  {
-    type: 'object',
-    properties: {
-      responses: {
-        description: 'An array of responses to send to the user.',
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            preamble: {
-              type: 'string',
-              description: 'Optional message to send to the user before code code, typically describing the program you are about to write or a first message replying to the user.',
-            },
-            language: {
-              type: 'string',
-              enum: languages,
-              description: 'The language to use for the code, as a lowercase string. These are the supported languages.',
-            },
-            code: {
-              type: 'string',
-              description:
-                'The code to send to the user; the contents of a file in the language specified',
-            },
-            postscript: {
-              type: 'string',
-              description: 'Optional message to send to the user after the code, typically describing how to use the program you wrote. Optional.',
-            },
-          },
-          additionalProperties: false,
-          required: ['language', 'code'],
-        },
-        additionalProperties: false,
-      },
-    },
-    additionalProperties: false,
-    required: ['responses'],
+const languages =
+  process.argv.length >= 3 ? process.argv.slice(3) : ['python', 'javascript', 'rust'];
+
+const WriteCodeParams = z
+  .object({
+    responses: z
+      .array(
+        z.object({
+          preamble: z
+            .string()
+            .optional()
+            .describe(
+              'Optional message to send to the user before code code, typically describing the program you are about to write or a first message replying to the user.',
+            ),
+          language: z
+            .enum(languages)
+            .describe(
+              'The language to use for the code, as a lowercase string. These are the supported languages.',
+            ),
+          code: z
+            .string()
+            .describe(
+              'The code to send to the user; the contents of a file in the language specified',
+            ),
+          postscript: z
+            .string()
+            .optional()
+            .describe(
+              'Optional message to send to the user after the code, typically describing how to use the program you wrote.',
+            ),
+        }),
+      )
+      .describe('An array of responses to send to the user.'),
+  })
+  .describe('The parameters for the write-code tool.');
+
+/** @type {import('openai/resources/index.mjs').ChatCompletionTool} */
+const WriteCodeTool = {
+  function: {
+    name: 'write-code',
+    description:
+      'Use this tool to respond to requests to write code or programs instead of writing a message',
+    parameters: zodToJsonSchema(WriteCodeParams),
   },
-);
+};
 
 console.log('✨  Calling OpenAI');
 
 const client = new OpenAI();
 
-const tools = [Tool];
-const toolNames = tools.map((tool) => '`' + tool.name + '`').join(', ');
+/** @type {import('openai/resources/index.mjs').ChatCompletionTool[]} */
+const tools = [WriteCodeTool];
+const toolNames = tools.map((tool) => '`' + tool.function.name + '`').join(', ');
 
 const { data, response } = await client.chat.completions
   .create({
@@ -100,7 +107,7 @@ function unbufferedWrite(text, part) {
   }
   switch (part) {
     case 'preamble':
-      process.stdout.write(xtermSlateBlue)
+      process.stdout.write(xtermSlateBlue);
       break;
     case 'language':
       process.stdout.write(xtermDeepPink3);
@@ -125,7 +132,7 @@ if (response.status !== 200) {
 console.log(`✨  OpenAI stream beginning`);
 
 /**
- * @type {StreamingParser<(typeof Tool)["$inferParameters"]>}
+ * @type {StreamingParser<z.infer<typeof WriteCodeParams>>}
  */
 const parser = new StreamingParser({ stream: true });
 
@@ -173,7 +180,7 @@ for await (const chunk of data) {
               unbufferedWrite(event.value, 'postscript');
             })
             .with({ kind: 'complete', path: [P._, P._, 'postscript', Sentinel] }, (event) => {
-              unbufferedWrite("\n\n");
+              unbufferedWrite('\n\n');
             })
             .otherwise(() => {
               // Do nothing.
@@ -187,7 +194,7 @@ for await (const chunk of data) {
 unbufferedWrite('\n');
 console.log(`✨  The OpenAI call completed.`);
 
-console.log('✨  Summary:')
+console.log('✨  Summary:');
 for (const program of programs) {
   console.log(
     `Received a ${program.language} program that was ${program.code.length} characters long.\n`,

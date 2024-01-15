@@ -13,6 +13,10 @@
   "dependencies": {
     "fn-stream": "^0.0.0",
     "openai": "^4.24.1",
-    "ts-pattern": "^5.0.6"
+    "ts-pattern": "^5.0.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "zod-to-json-schema": "^3.22.3"
   }
 }

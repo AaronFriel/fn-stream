@@ -15,15 +15,16 @@
     "noUnusedParameters": true,
     "preserveWatchOutput": true,
     "noImplicitAny": false,
+    "noErrorTruncation": true,
     "noFallthroughCasesInSwitch": true,
     "stripInternal": true,
     "skipLibCheck": true,
     "strict": true,
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2018", "DOM"],
     "module": "ESNext",
-    "target": "ES2022"
+    "target": "ES2018"
   },
-  "include": ["src/**/*.ts", "examples/**/*.ts"],
+  "include": ["src/**/*.ts", "examples/**/*.ts", "src/event-proxy/index.ts.ignore"],
   "exclude": ["node_modules"],
 }

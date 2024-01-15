@@ -1,10 +1,10 @@
 export type JsonObject = { [key: string]: JsonValue };
 export type JsonArray = JsonValue[];
 export type JsonPrimitive = string | number | boolean | null;
+
 export type JsonValue = JsonObject | JsonArray | JsonPrimitive;
 
 export const parseStateSymbol: unique symbol = Symbol('ParseState');
-export type ParseStateSymbol = typeof parseStateSymbol;
 
 export type PartialPrimitiveValue = 'complete' | 'partial' | undefined;
 
@@ -15,15 +15,20 @@ export type PartialArray = JsonValue[] & { [parseStateSymbol]: PartialPrimitiveV
 export const Sentinel = null;
 export type Sentinel = typeof Sentinel;
 
-export type PathPart = string | number | Sentinel | Symbol; // Symbol is not actually used.
+type PathPart = string | number | Sentinel; // Symbol is not actually used.
 
 type MapPartialParseEvent<T, PathPrefix extends Array<PathPart>> = {
-  [K in keyof T]: InferParseEvent<T[K], [...PathPrefix, K], 'complete'>;
+  [K in keyof T]: K extends string | number ? ParseEvent<T[K], [...PathPrefix, K], 'complete'> : never;
 };
 
-export type ParseEventKind = 'partial' | 'complete' | 'value';
+// Prevent "any" types from distributing over all branches of the conditional type.
+type IsStrictlyAny<T> = (T extends never ? true : false) extends false ? false : true;
 
-export type InferParseEvent<
+
+// Used to prevent language server from showing InferParseEvent<...> and instead show the expanded type.
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+
+export type ParseEvent<
   T,
   PathPrefix extends PathPart[] = [],
   RootKind extends 'complete' | 'value' = 'value',
@@ -33,10 +38,10 @@ export type InferParseEvent<
       path: [...PathPrefix, Sentinel];
       value: T;
     }
-  | (T extends undefined
+  | (IsStrictlyAny<T> extends true
       ? {
-          kind: 'partial';
-          path: [...PathPrefix, Sentinel];
+          kind: 'complete';
+          path: [...PathPrefix, ...PathPart[]];
           value: T;
         }
       : T extends string
@@ -45,18 +50,10 @@ export type InferParseEvent<
           path: [...PathPrefix, Sentinel];
           value: T;
         }
-      : T extends JsonPrimitive
-      ? {
-          kind: RootKind;
-          path: [...PathPrefix, Sentinel];
-          value: T;
-        }
       : T extends JsonArray
       ? // prettier-ignore
-        MapPartialParseEvent<T, PathPrefix> extends [...infer U] ? U[number] : never
+        Expand<MapPartialParseEvent<T, PathPrefix> extends [...infer U] ? U[number] : never>
       : T extends JsonObject
       ? // prettier-ignore
-        MapPartialParseEvent<T, PathPrefix> extends Record<any, infer U> ? U : never
+        Expand<MapPartialParseEvent<T, PathPrefix> extends Record<any, infer U> ? U : never>
       : never);
-
-export type ParseEvent<T> = Readonly<InferParseEvent<T>>;

@@ -1,57 +1,36 @@
-import { ChatCompletionChunk } from 'openai/resources';
-import { createChatCompletionTool } from '../../src/adapters/openai';
+import { ChatCompletionChunk, ChatCompletionTool } from 'openai/resources';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
-export const OpenAITool = createChatCompletionTool('test', 'a test tool', {
-  type: 'object',
-  properties: {
-    // We want a moderately complex type here as an example. This is a hypothetical "tool" that
-    // can alternate between sending messages to the user, and taking actions.
-    parts: {
-      type: 'array',
-      items: {
-        type: 'object',
-        oneOf: [
-          {
-            type: 'object',
-            properties: {
-              message: {
-                type: 'object',
-                properties: {
-                  text: { type: 'string' },
-                },
-                required: ['text'],
-                additionalProperties: false,
-              },
-            },
-            required: ['message'],
-            additionalProperties: false,
-          },
-          {
-            type: 'object',
-            properties: {
-              action: {
-                type: 'object',
-                properties: {
-                  params: { type: 'array', items: { type: 'string' } },
-                  value: { type: 'integer' },
-                  bool: { type: 'boolean' },
-                },
-                required: ['params', 'value', 'bool'],
-                additionalProperties: false,
-              },
-            },
-            required: ['action'],
-            additionalProperties: false,
-          },
-        ],
-      },
-    },
-  },
-  required: ['parts'],
-  additionalProperties: false,
+const MessageArguments = z.object({
+  message: z.object({
+    text: z.string(),
+  }),
 });
 
-export type OpenAIToolParameters = (typeof OpenAITool)['$inferParameters'];
+const ActionArguments = z.object({
+  action: z.object({
+    params: z.array(z.string()),
+    value: z.number(),
+    bool: z.boolean(),
+  }),
+});
+
+const ToolProperties = z.object({
+  parts: z.array(z.union([MessageArguments, ActionArguments])),
+});
+
+// Not used, validates that the types are compatible.
+export const OpenAITool: ChatCompletionTool = {
+  type: 'function',
+  function: {
+    name: 'test',
+    description: 'a test tool',
+    parameters: zodToJsonSchema(ToolProperties),
+  },
+};
+
+export type OpenAIToolParameters = z.infer<typeof ToolProperties>;
 
 export function generateCompletionChunks(toolCalls: OpenAIToolParameters[]): ChatCompletionChunk[] {
   let index = 0;
