@@ -101,6 +101,17 @@ const xtermSteelBlue = '\x1b[38;5;81m';
 const xtermDeepPink3 = '\x1b[38;5;162m';
 const colorReset = '\x1b[0m';
 
+// Strip terminal control sequences/control characters from untrusted model output.
+const ansiOrOscSequence =
+  /\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001B]*(?:\u0007|\u001B\\))/g;
+const disallowedControlCharacters = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
+
+function sanitizeForTerminal(text) {
+  return String(text)
+    .replace(ansiOrOscSequence, '')
+    .replace(disallowedControlCharacters, '');
+}
+
 function unbufferedWrite(text, part) {
   if (part && process.env.FILTER_PART && process.env.FILTER_PART !== part) {
     return;
@@ -122,7 +133,7 @@ function unbufferedWrite(text, part) {
       process.stdout.write(colorReset);
       break;
   }
-  process.stdout.write(text);
+  process.stdout.write(sanitizeForTerminal(text));
 }
 
 if (response.status !== 200) {
